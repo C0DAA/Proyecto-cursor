@@ -2,11 +2,9 @@ import cv2 as cv
 import numpy as np
 import mediapipe as mp
 import autopy
-from PIL import Image
-
+from PIL import Image 
+ 
 anchopanta, altopanta = autopy.screen.size()
-print('ancho: ',anchopanta)
-print('alto: ', altopanta)
 
 MALLA_FACIAL = mp.solutions.face_mesh # objeto de mediapipe
 
@@ -35,22 +33,22 @@ with MALLA_FACIAL.FaceMesh(
         if not ret:
             break
 
-        ## recortar frame en parte del ojo 
-
-#rows,cols, _ = frame.shape
-
-#cut_image = frame[240: 480, 320: 640]
-        
-#cv.imshow('foto cortada', cut_image)
-
-
-
         #escala de grises para mediapipe
         rgb_frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
         #cv.imshow('escala de grises', rgb_frame) #mostrar escala de gris para 
         
         img_h, img_w = frame.shape[:2]
         results = face_mesh.process(rgb_frame)
+       
+       
+        ## recortar frame en parte del ojo 
+
+       # rows,cols, _ = frame.shape
+
+       # cut_image = frame[240: 480, 320: 640]
+        
+       # cv.imshow('foto cortada', cut_image)
+
 
         #DIBUJO DE LINEAS
         if results.multi_face_landmarks:
@@ -58,26 +56,32 @@ with MALLA_FACIAL.FaceMesh(
             mesh_points= np.array([np.multiply([p.x, p.y], [img_w, img_h]).astype(int) for p in results.multi_face_landmarks[0].landmark])
             #print(mesh_points.shape)
            
-            #lineas ojos
-            cv.polylines(frame, [mesh_points[OJO_IZQUIERDO]], True, (0,0,255),1,cv.LINE_AA)
-            cv.polylines(frame, [mesh_points[OJO_DERECHO]], True, (0,0,255),1,cv.LINE_AA)
-
             #circulos iris
             (l_cx, l_cy), l_radius =cv.minEnclosingCircle(mesh_points[IRIS_IZQUIERDO])
             (r_cx, r_cy), r_radius =cv.minEnclosingCircle(mesh_points[IRIS_DERECHO])
-        
+    
+            #coordenadas centro de iris
             CENTRO_IZQUIERDO= np.array([l_cx, l_cy], dtype = np.int32)
             CENTRO_DERECHO= np.array([r_cx, r_cy], dtype = np.int32)
 
             #control de mouse con coordenadas de centro del ojo IZQUIERDO
-            autopy.mouse.move(anchopanta - l_cx,l_cy)
-            
-
+            #autopy.mouse.move(anchopanta - l_cx,l_cy)
+ 
+            #dibujo circulo iris
             cv.circle(frame, CENTRO_IZQUIERDO, int(l_radius),(255,0,255),1,cv.LINE_AA)
             cv.circle(frame, CENTRO_DERECHO, int(l_radius),(255,0,255),1,cv.LINE_AA)
             cv.circle(frame, CENTRO_DERECHO,1,(255,0,255),1,cv.LINE_AA)
             cv.circle(frame, CENTRO_IZQUIERDO,1,(255,0,255),1,cv.LINE_AA)
+           
+           
 
+            #lineas ojos
+            cv.polylines(frame, [mesh_points[OJO_IZQUIERDO]], True, (0,0,255),1,cv.LINE_AA)
+            cv.polylines(frame, [mesh_points[OJO_DERECHO]], True, (0,0,255),1,cv.LINE_AA)
+
+
+            #print("IZQUIERDO: ",mesh_points[OJO_IZQUIERDO[0]] , " , ", mesh_points[OJO_IZQUIERDO[15]])
+            #print("derecho: ",mesh_points[OJO_DERECHO[0]] , " , ", mesh_points[OJO_DERECHO[15]])
         cv.imshow('control', frame) 
         key = cv.waitKey(1)
         if key == ord('q'):
