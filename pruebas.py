@@ -37,11 +37,11 @@ with MALLA_FACIAL.FaceMesh(
 
         ## recortar frame en parte del ojo 
 
-        rows,cols, _ = frame.shape
+#rows,cols, _ = frame.shape
 
-        cut_image = frame[240: 480, 320: 640]
+#cut_image = frame[240: 480, 320: 640]
         
-        cv.imshow('foto cortada', cut_image)
+#cv.imshow('foto cortada', cut_image)
 
 
 
