@@ -1,10 +1,13 @@
 from funciones import * 
 
-#razon de proporcionalidad + 0.1 para evitar cortes de pantalla
-r = RazonDeProporcionalidad()
+
+x_aux,y_aux = calcular_centro_pantalla()
+
 
 #captura de video
 cap = cv.VideoCapture(0)
+
+CONTADOR = 1
 
 #objeto facemesh
 with MALLA_FACIAL.FaceMesh(
@@ -14,42 +17,131 @@ with MALLA_FACIAL.FaceMesh(
     min_tracking_confidence=0.5
 ) as face_mesh:
 
-    #lectura de video
+    
     while True:
-        ret,frame = lecturaVideo(cap)
-        if not ret:
-            break
+        
+        if (CONTADOR == 1):
 
-        #escala de grises para mediapipe
-        rgb_frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-        img_h, img_w = frame.shape[:2]
-        results = face_mesh.process(rgb_frame)
-       
-        #DIBUJO DE LINEAS
-        if results.multi_face_landmarks:
+            ret,frame = lecturaVideo(cap)
+            if not ret:
+              break
+            #escala de grises para mediapipe
+            rgb_frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+            img_h, img_w = frame.shape[:2]
+            results = face_mesh.process(rgb_frame)
+            height, width, _ = frame.shape
+                
+                
+            r = RazonDeProporcionalidad(width)
+            if results.multi_face_landmarks:
+                mesh_points= np.array([np.multiply([p.x, p.y], [img_w, img_h]).astype(int) for p in results.multi_face_landmarks[0].landmark])
+                
+                #centro de ojos
+                CENTRO_IZQUIERDO_AUX,CENTRO_DERECHO_AUX,l_radius= centros_ojos(mesh_points)
+                
+                #dibujar lineas ojos
+                dibujar(mesh_points, frame,CENTRO_IZQUIERDO_AUX,CENTRO_DERECHO_AUX,l_radius)
+                
+                coordinates_left_eye = [] 
+                coordinates_right_eye= []
+                coordenadas_iris_izquierdo = []
+ 
+                for face_landmarks in results.multi_face_landmarks:
+                    for index in OJO_IZQUIERDO:
+                        x1 = int(face_landmarks.landmark[index].x * width)
+                        y1 = int(face_landmarks.landmark[index].y * height)
+                        coordinates_left_eye.append([x1,y1])
+                        cv.circle(frame,(x1,y1),2,(0,255,255),1)
+                        cv.circle(frame,(x1,y1),1,(128,0,250),1)
 
-            mesh_points= np.array([np.multiply([p.x, p.y], [img_w, img_h]).astype(int) for p in results.multi_face_landmarks[0].landmark])
-           
-            #circulos iris
-            (l_cx, l_cy), l_radius =cv.minEnclosingCircle(mesh_points[IRIS_IZQUIERDO])
-            (r_cx, r_cy), r_radius =cv.minEnclosingCircle(mesh_points[IRIS_DERECHO])
-           
-            #coordenadas centro de iris
-            CENTRO_IZQUIERDO= np.array([l_cx, l_cy], dtype = np.int32)
-            CENTRO_DERECHO= np.array([r_cx, r_cy], dtype = np.int32)
+                for face_landmarks in results.multi_face_landmarks:
+                    for index in OJO_DERECHO:
+                        x2 = int(face_landmarks.landmark[index].x * width)
+                        y2 = int(face_landmarks.landmark[index].y * height)
+                        coordinates_right_eye.append([x2,y2])
+                        cv.circle(frame,(x2,y2),2,(0,255,255),1)
+                        cv.circle(frame,(x2,y2),1,(128,0,250),1)
+            
+                #Distancia parpados
+                distancia_izquierda_AUX , distancia_derecha_AUX = calcular_distancia(coordinates_left_eye, coordinates_right_eye)
+               
+                
+                CONTADOR += 1
 
-            #control de mouse con coordenadas de centro del ojo IZQUIERDO * razon de proporcion
-            pyautogui.moveTo(int(CENTRO_IZQUIERDO[0])*r,int(CENTRO_IZQUIERDO[1])*r)   
+        elif (CONTADOR == 2):
             
-            #dibujar lineas
-            dibujar(mesh_points, frame, CENTRO_IZQUIERDO, CENTRO_DERECHO,l_radius)
-           
+            ret,frame_dos = lecturaVideo(cap)
+            if not ret:
+                break
+            #escala de grises para mediapipe
+            rgb_frame = cv.cvtColor(frame_dos, cv.COLOR_BGR2RGB)
+            img_h, img_w = frame_dos.shape[:2]
+            results = face_mesh.process(rgb_frame)
+            height, width, _ = frame_dos.shape
+            if results.multi_face_landmarks:
+                mesh_points= np.array([np.multiply([p.x, p.y], [img_w, img_h]).astype(int) for p in results.multi_face_landmarks[0].landmark])
+                
+                #centro de ojos
+                CENTRO_IZQUIERDO,CENTRO_DERECHO,l_radius= centros_ojos(mesh_points)
+                
+                #dibujar lineas ojos
+                dibujar(mesh_points, frame_dos,CENTRO_IZQUIERDO,CENTRO_DERECHO,l_radius)
+                
+                coordinates_left_eye = [] 
+                coordinates_right_eye= []
+                coordenadas_iris_izquierdo = []
+ 
+                for face_landmarks in results.multi_face_landmarks:
+                    for index in OJO_IZQUIERDO:
+                        x1 = int(face_landmarks.landmark[index].x * width)
+                        y1 = int(face_landmarks.landmark[index].y * height)
+                        coordinates_left_eye.append([x1,y1])
+                        cv.circle(frame_dos,(x1,y1),2,(0,255,255),1)
+                        cv.circle(frame_dos,(x1,y1),1,(128,0,250),1)
+
+                for face_landmarks in results.multi_face_landmarks:
+                    for index in OJO_DERECHO:
+                        x2 = int(face_landmarks.landmark[index].x * width)
+                        y2 = int(face_landmarks.landmark[index].y * height)
+                        coordinates_right_eye.append([x2,y2])
+                        cv.circle(frame_dos,(x2,y2),2,(0,255,255),1)
+                        cv.circle(frame_dos,(x2,y2),1,(128,0,250),1)
+                        
+                        
+                
             
+                #Distancia parpados
+                distancia_izquierda , distancia_derecha = calcular_distancia(coordinates_left_eye, coordinates_right_eye)
+
+                CONTADOR += 1
+                
+      
+        elif (CONTADOR == 3):
+
+            vectorX, vectorY= calcular_vector(CENTRO_IZQUIERDO_AUX,CENTRO_IZQUIERDO, width)
+
+            finalX, finalY = punto_medio(CENTRO_IZQUIERDO,CENTRO_DERECHO)
+
+            CENTROX = (int(finalX)+int(vectorX))
+            CENTROY = (int(finalY)+int(vectorY))
             
-        cv.imshow('control', frame) 
+            #print(CENTROX,CENTROY)
+
+            
+
+            pyautogui.moveTo((int(CENTROX))*r,(int(CENTROY))*r) 
+
+            cv.circle(frame_dos,(int(finalX),int(finalY)),1,(128,0,250),1)
+            cv.imshow('control', frame_dos)
+            CONTADOR -= 1
+            
+        else: 
+            print("ERROR, EL CONTADOR SE VOLVIO LOQUITO")
+
         key = cv.waitKey(1)
         if key == ord('q'):
             break
 
+        
 cap.release()
 cv.destroyAllWindows()
