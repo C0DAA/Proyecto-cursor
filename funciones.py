@@ -47,7 +47,7 @@ MALLA_FACIAL = mp.solutions.face_mesh
 #OBTIENE LA RAZON DE PROPORCIONALIDAD
 def RazonDeProporcionalidad(ancho_frame):
 
-    r = (ancho_pantalla/ancho_frame)+0.2
+    r = (ancho_pantalla/ancho_frame)*2
 
     return r
 
@@ -72,7 +72,7 @@ def dibujar(mesh_points, frame, CENTRO_IZQUIERDO,CENTRO_DERECHO,l_radius):
     cv.circle(frame, CENTRO_DERECHO,1,(0,255,0),1,cv.LINE_AA)
     cv.circle(frame, CENTRO_IZQUIERDO,1,(0,255,0),1,cv.LINE_AA)
     
-def calcular_rectangulo_interior(ancho,alto):
+def calcular_rectangulo_interior(ancho,alto):   
 
      X1 = int(ancho / 3)
      X2 = int(X1 * 2)
@@ -81,11 +81,11 @@ def calcular_rectangulo_interior(ancho,alto):
      
      return X1,X2,Y1,Y2
 
-def calcular_distancia(coordinates_left_eye, coordinates_right_eye):
+def pestañeo(coordinates_left_eye):
 
-    distancia_izquierda = math.sqrt((coordinates_left_eye[12][0]-coordinates_left_eye[4][0])**2 + (coordinates_left_eye[12][1]-coordinates_left_eye[4][1])**2)
-    distancia_derecha = math.sqrt((coordinates_right_eye[12][0]-coordinates_right_eye[4][0])**2 + (coordinates_right_eye[12][1]-coordinates_right_eye[4][1])**2)
-    return distancia_izquierda, distancia_derecha
+    distancia= math.sqrt((coordinates_left_eye[12][0]-coordinates_left_eye[4][0])**2 + (coordinates_left_eye[12][1]-coordinates_left_eye[4][1])**2)
+    
+    return distancia
 
 def calcular_centro_pantalla():
    
@@ -106,14 +106,13 @@ def centros_ojos(mesh_points):
 
     return CENTRO_IZQUIERDO,CENTRO_DERECHO, l_radius
 
-def calcular_vector(centro_izquierda_aux, centro_izquierda, width):
+def calcular_vector(centro_izquierda_aux, centro_izquierda):
     
     vectorX = centro_izquierda[0] - centro_izquierda_aux[0]
     vectorY = centro_izquierda[1] - centro_izquierda_aux[1]
-    ancho = ancho_pantalla/250
-    alto = alto_pantalla/250
-    print(vectorX,vectorY)
-    return vectorX*ancho,vectorY*alto
+
+
+    return vectorX,vectorY
 
 def distancia_Entre_ojos(centro_izquierda,centro_derecha):
 
@@ -129,3 +128,45 @@ def punto_medio(punto1, punto2):
 
     return result1, result2
 ################################################################
+
+# puntos facemesh para rectangulo
+# 285 y 261
+
+
+def eye_aspect_ratio(coordinates):
+     d_A = np.linalg.norm(np.array(coordinates[1]) - np.array(coordinates[5]))
+     d_B = np.linalg.norm(np.array(coordinates[2]) - np.array(coordinates[4]))
+     d_C = np.linalg.norm(np.array(coordinates[0]) - np.array(coordinates[3]))
+     return (d_A + d_B) / (2 * d_C)
+
+
+
+
+def drawing_output(frame, coordinates_left_eye, coordinates_right_eye, blink_counter):
+     aux_image = np.zeros(frame.shape, np.uint8)
+     contours1 = np.array([coordinates_left_eye])
+     contours2 = np.array([coordinates_right_eye])
+     cv.fillPoly(aux_image, pts=[contours1], color=(255, 0, 0))
+     cv.fillPoly(aux_image, pts=[contours2], color=(255, 0, 0))
+     output = cv.addWeighted(frame, 1, aux_image, 0.7, 1)
+     cv.rectangle(output, (0, 0), (200, 50), (255, 0, 0), -1)
+     cv.rectangle(output, (202, 0), (265, 50), (255, 0, 0),2)
+     cv.putText(output, "Num. Parpadeos:", (10, 30), cv.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+     cv.putText(output, "{}".format(blink_counter), (220, 35), cv.FONT_HERSHEY_SIMPLEX, 0.9, (128, 0, 250), 2)
+     
+     return output
+
+
+
+def calcular_distancia(coordinates_left_eye, coordinates_right_eye):
+
+    distancia_izquierda = math.sqrt((coordinates_left_eye[12][0]-coordinates_left_eye[4][0])**2 + (coordinates_left_eye[12][1]-coordinates_left_eye[4][1])**2)
+    distancia_derecha = math.sqrt((coordinates_right_eye[12][0]-coordinates_right_eye[4][0])**2 + (coordinates_right_eye[12][1]-coordinates_right_eye[4][1])**2)
+    return distancia_izquierda, distancia_derecha
+
+
+def calcular_distancia2(coordenadas1, coordenadas2):
+    resultado =  math.sqrt((coordenadas2[0]-coordenadas1[0])**2 + (coordenadas2[1]-coordenadas1[1])**2)
+    return resultado
+
+
